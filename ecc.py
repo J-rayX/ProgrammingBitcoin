@@ -30,3 +30,9 @@ class FieldElement:
             raise TypeError("Cannot add two numbers in different fields")
         num = (self.num - other.num) % self.prime
         return self.__class__(num, self.prime)
+
+    def __mul__(self, other):
+        if self.prime != other.prime:
+            raise TypeError("Cannot add two numbers in different fields")
+        num = (self.num * other.num) % self.prime
+        return self.__class__(num, self.prime)
