@@ -10,7 +10,7 @@ class Point:
             return
         if self.y**2 != self.x**3 + a * x + b:
             raise ValueError("({}, {}) is not on the curve".format(x, y))
-        # if two points have same x but difffernt y i.e vertical line, additive inverses
+        # if two points have same x but different y i.e vertical line, additive inverses
         # additive inverses: a number when added (or sign changed) to original number results in zero
         if self.x == x and self.y != y:
             return self.__class__(None, None, self.a, self.b)
@@ -42,3 +42,9 @@ class Point:
         # point at infinity
         if other.x is None:
             return self
+
+        if self.x != other.x:
+            s = (other.y - self.y) / (other.x - self.x)
+            x3 = s**2 - self.x - other.x
+            y3 = s * (self.x - x3) - self.y
+            return self.__class__(x3, y3, self.a, self.b)
