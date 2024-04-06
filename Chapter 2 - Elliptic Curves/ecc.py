@@ -48,3 +48,13 @@ class Point:
             x3 = s**2 - self.x - other.x
             y3 = s * (self.x - x3) - self.y
             return self.__class__(x3, y3, self.a, self.b)
+
+        if self == other:
+            s = (3 * self.x**2 + self.a) / (2 * self.y)
+            x3 = s**2 - 2 * self.x
+            y3 = s * (self.x - x3) - self.y
+            return self.__class__(x3, y3, self.a, self.b)
+
+        # Exception: when tangent line is vertical
+        if self == other and self.y == 0 * self.x:
+            return self.__class__(None, None, self.a, self.b)
