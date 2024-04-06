@@ -2,6 +2,12 @@ import unittest
 from unittest import TestCase
 
 
+A = 0
+B = 0
+P = 2**256 - 2**32 - 977
+N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+
 class FieldElement:
     def __init__(self, num, prime):
         if num >= prime or num < 0:
@@ -130,6 +136,27 @@ class Point:
         # for _ in range(coefficient):
         #     product += self
         # return product
+
+
+class S256Field(FieldElement):
+    def __init__(self, num, prime=None):
+        super().__init__(num=num, prime=P)
+
+    def __repr__(self):
+        return "{:x}".format(self.num).zfill(64)
+
+
+class S256Point(Point):
+    def __init__(self, x, y, a=None, b=None):
+        a, b = S256Field(A), S256Field(B)
+        if type(x) == int:
+            super().__init__(x=S256Field(x), y=S256Field(y), a=a, b=b)
+        else:
+            super().__init__(x=x, y=y, a=a, b=b)
+
+    def __rmul__(self, coefficient):
+        coef = coefficient % N
+        return super().__rmul__(coef)
 
 
 class ECCTest(TestCase):
