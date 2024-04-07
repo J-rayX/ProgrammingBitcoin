@@ -175,6 +175,21 @@ class S256Point(Point):
         total = u * G + v * self
         return total.x.num == sig.r
 
+    def sec(self, compressed=False):
+        """returns the binary version of the SEC format"""
+
+        if compressed:
+            if self.y.num % 2 == 0:
+                return b"\x02" + self.x.num.to_bytes(32, "big")
+            else:
+                return b"\x03" + self.x.num.to_bytes(32, "big")
+        else:
+            return (
+                b"\x04"
+                + self.x.num.to_bytes(32, "big")
+                + self.y.num.to_bytes(32, "big")
+            )
+
 
 class PrivateKey:
     def __init__(self, secret):
@@ -231,3 +246,18 @@ class ECCTest(TestCase):
             y3 = FieldElement(y3_raw, prime)
             p3 = Point(x3, y3, a, b)
             self.assertEqual(p1 + p2, p3)
+
+
+class Signature:
+    def der(self):
+        rbin = self.r.to_bytes(32, byteorder='big')
+        rbin = rbin.lstrip(b'\x00')
+        if rbin[0] & 0x80:
+            rbin = b'\x00' + rbin 
+        result = bytes([2, len(rbin)]) + rbin
+        sbin = self.s.to_bytes(32, byteorder='big')
+        sbin = sbin.lstrip(b'\x00') 
+        if sbin[0] & 0x80:
+            sbin = b'\x00' + sbin 
+        result += bytes([2, len(sbin)]) + sbin 
+        return bytes([0x30, len(result)]) + result
