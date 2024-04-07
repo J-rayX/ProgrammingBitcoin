@@ -147,6 +147,19 @@ class Signature:
     def __repr__(self):
         return "Signature({:x},{:x})".format(self.r, self.s)
 
+    def der(self):
+        rbin = self.r.to_bytes(32, byteorder="big")
+        rbin = rbin.lstrip(b"\x00")
+        if rbin[0] & 0x80:
+            rbin = b"\x00" + rbin
+        result = bytes([2, len(rbin)]) + rbin
+        sbin = self.s.to_bytes(32, byteorder="big")
+        sbin = sbin.lstrip(b"\x00")
+        if sbin[0] & 0x80:
+            sbin = b"\x00" + sbin
+        result += bytes([2, len(sbin)]) + sbin
+        return bytes([0x30, len(result)]) + result
+
 
 class S256Field(FieldElement):
     def __init__(self, num, prime=None):
@@ -189,6 +202,30 @@ class S256Point(Point):
                 + self.x.num.to_bytes(32, "big")
                 + self.y.num.to_bytes(32, "big")
             )
+
+    @classmethod
+    def parse(self, sec_bin):
+        """returns a Point object from a SEC binary (not hex) - Uncompressed SEC"""
+        if sec_bin[0] == 4:
+            x = int.from_bytes(sec_bin[1:33], "big")
+            y = int.from_bytes(sec_bin[33:65], "big")
+            return S256Point(x=x, y=y)
+        is_even = sec_bin[0] == 2
+        x = S256Field(int.from_bytes(sec_bin[1:], "big"))
+        # right side of the equation y^2 = x^3 + 7
+        alpha = x**3 + S256Field(B)
+        # solve for the left side
+        beta = alpha.sqrt()
+        if beta.num % 2 == 0:
+            even_beta = beta
+            odd_beta = S256Field(P - beta.num)
+        else:
+            even_beta = S256Field(P - beta.num)
+            odd_beta = beta
+        if is_even:
+            return S256Point(x, even_beta)
+        else:
+            return S256Point(x, odd_beta)
 
 
 class PrivateKey:
@@ -246,18 +283,3 @@ class ECCTest(TestCase):
             y3 = FieldElement(y3_raw, prime)
             p3 = Point(x3, y3, a, b)
             self.assertEqual(p1 + p2, p3)
-
-
-class Signature:
-    def der(self):
-        rbin = self.r.to_bytes(32, byteorder='big')
-        rbin = rbin.lstrip(b'\x00')
-        if rbin[0] & 0x80:
-            rbin = b'\x00' + rbin 
-        result = bytes([2, len(rbin)]) + rbin
-        sbin = self.s.to_bytes(32, byteorder='big')
-        sbin = sbin.lstrip(b'\x00') 
-        if sbin[0] & 0x80:
-            sbin = b'\x00' + sbin 
-        result += bytes([2, len(sbin)]) + sbin 
-        return bytes([0x30, len(result)]) + result
