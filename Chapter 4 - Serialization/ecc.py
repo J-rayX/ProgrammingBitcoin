@@ -227,6 +227,39 @@ class S256Point(Point):
         else:
             return S256Point(x, odd_beta)
 
+    def hash160(self, compressed=True):
+        return hash160(self.sec(compressed))
+
+        def address(self, compressed=True, testnet=False):
+            """Returns the address string"""
+            h160 = self.hash160(compressed)
+
+        if testnet:
+            prefix = b"\x6f"
+        else:
+            prefix = b"\x00"
+            return encode_base58_checksum(prefix + h160)
+
+
+BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+...
+
+
+def encode_base58(s):
+    count = 0
+    for c in s:
+        if c == 0:
+            count += 1
+        else:
+            break
+    num = int.from_bytes(s, "big")
+    prefix = "1" * count
+    result = ""
+    while num > 0:
+        num, mod = divmod(num, 58)
+        result = BASE58_ALPHABET[mod] + result
+    return prefix + result
+
 
 class PrivateKey:
     def __init__(self, secret):
@@ -244,6 +277,35 @@ class PrivateKey:
         if s > N / 2:
             s = N - s
         return Signature(r, s)
+
+    def encode_base58_checksum(b):
+        return encode_base58(b + hash256(b)[:4])
+
+    def hash160(s):
+        """sha256 followed by ripemd160"""
+        return hashlib.new("ripemd160", hashlib.sha256(s).digest()).digest()
+
+    def wif(self, compressed=True, testnet=False):
+        secret_bytes = self.secret.to_bytes(32, "big")
+        if testnet:
+            prefix = b"\xef"
+        else:
+            prefix = b"\x80"
+        if compressed:
+            suffix = b"\x01"
+        else:
+            suffix = b""
+        return encode_base58_checksum(prefix + secret_bytes + suffix)
+
+
+def little_endian_to_int(b):
+    """takes byte as little-endian to return integer."""
+    return int.from_bytes(b, "little")
+
+
+def int_to_little_endian(n, length):
+    """takes integer to returns byte as little-endian"""
+    return n.to_bytes(length, "little")
 
 
 class ECCTest(TestCase):
